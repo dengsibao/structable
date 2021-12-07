@@ -2,17 +2,17 @@ package main
 
 import (
 	"github.com/Masterminds/squirrel"
-	"github.com/Masterminds/structable"
+	"github.com/dengsibao/structable"
 	_ "github.com/lib/pq"
 
 	"database/sql"
 	"fmt"
 )
 
-// For convenience, we declare the table name as a constant.
+// UserTable For convenience, we declare the table name as a constant.
 const UserTable = "users"
 
-// This is our struct. Notice that we make this a structable.Recorder.
+// User This is our struct. Notice that we make this a structable.Recorder.
 type User struct {
 	structable.Recorder
 	builder squirrel.StatementBuilderType

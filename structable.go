@@ -1,145 +1,4 @@
-/* Structable is a struct-to-table mapper for databases.
-
-Structable makes a loose distinction between a Record (a description of the
-data to be stored) and a Recorder (the thing that does the storing). A
-Record is a simple annotated struct that describes the properties of an
-object.
-
-Structable provides the Recorder (an interface usually backed by a *DbRecorder).
-The Recorder is capable of doing the following:
-
-	- Bind: Attach the Recorder to a Record
-	- Load: Load a Record from a database
-	- Insert: Create a new Record
-	- Update: Change one or more fields on a Record
-	- Delete: Destroy a record in the database
-	- Has: Determine whether a given Record exists in a database
-	- LoadWhere: Load a record where certain conditions obtain.
-
-Structable is pragmatic in the sense that it allows ActiveRecord-like extension
-of the Record object to allow business logic. A Record does not *have* to be
-a simple data-only struct. It can have methods -- even methods that operate
-on the database.
-
-Importantly, Structable does not do any relation management. There is no
-magic to convert structs, arrays, or maps to references to other tables.
-(If you want that, you may prefer GORM or GORP.) The preferred method of
-handling relations is to attach additional methods to the Record struct.
-
-Structable uses Squirrel for statement building, and you may also use
-Squirrel for working with your data.
-
-Basic Usage
-
-The following example is taken from the `example/users.go` file.
-
-
-	package main
-
-	import (
-		"github.com/Masterminds/squirrel"
-		"github.com/Masterminds/structable"
-		_ "github.com/lib/pq"
-
-		"database/sql"
-		"fmt"
-	)
-
-	// This is our struct. Notice that we make this a structable.Recorder.
-	type User struct {
-		structable.Recorder
-		builder squirrel.StatementBuilderType
-
-		Id int `stbl:"id,PRIMARY_KEY,SERIAL"`
-		Name string `stbl:"name"`
-		Email string `stbl:"email"`
-	}
-
-	// NewUser creates a new Structable wrapper for a user.
-	//
-	// Of particular importance, watch how we intialize the Recorder.
-	func NewUser(db squirrel.DBProxyBeginner, dbFlavor string) *User {
-		u := new(User)
-		u.Recorder = structable.New(db, dbFlavor).Bind(UserTable, u)
-		return u
-	}
-
-	func main() {
-
-		// Boilerplate DB setup.
-		// First, we need to know the database driver.
-		driver := "postgres"
-		// Second, we need a database connection.
-		con, _ := sql.Open(driver, "dbname=structable_test sslmode=disable")
-		// Third, we wrap in a prepared statement cache for better performance.
-		cache := squirrel.NewStmtCacheProxy(con)
-
-		// Create an empty new user and give it some properties.
-		user := NewUser(cache, driver)
-		user.Name = "Matt"
-		user.Email = "matt@example.com"
-
-		// Insert this as a new record.
-		if err := user.Insert(); err != nil {
-			panic(err.Error())
-		}
-		fmt.Printf("Initial insert has ID %d, name %s, and email %s\n", user.Id, user.Name, user.Email)
-
-		// Now create another empty User and set the user's Name.
-		again := NewUser(cache, driver)
-		again.Id = user.Id
-
-		// Load a duplicate copy of our user. This loads by the value of
-		// again.Id
-		again.Load()
-
-		again.Email = "technosophos@example.com"
-		if err := again.Update(); err != nil {
-			panic(err.Error())
-		}
-		fmt.Printf("Updated user has ID %d and email %s\n", again.Id, again.Email)
-
-		// Delete using the built-in Deleter. (delete by Id.)
-		if err := again.Delete(); err != nil {
-			panic(err.Error())
-		}
-		fmt.Printf("Deleted user %d\n", again.Id)
-	}
-
-The above pattern closely binds the Recorder to the Record. Essentially, in
-this usage Structable works like an ActiveRecord.
-
-It is also possible to emulate a DAO-type model and use the Recorder as a data
-access object and the Record as the data description object. An example of this
-method can be found in the `example/fence.go` code.
-
-The Stbl Tag
-
-The `stbl` tag is of the form:
-
-	stbl:"field_name [,PRIMARY_KEY[,AUTO_INCREMENT]]"
-
-The field name is passed verbatim to the database. So `fieldName` will go to the database as `fieldName`.
-Structable is not at all opinionated about how you name your tables or fields. Some databases are, though, so
-you may need to be careful about your own naming conventions.
-
-`PRIMARY_KEY` tells Structable that this field is (one of the pieces of) the primary key. Aliases: 'PRIMARY KEY'
-
-`AUTO_INCREMENT` tells Structable that this field is created by the database, and should never
-be assigned during an Insert(). Aliases: SERIAL, AUTO INCREMENT
-
-Limitations
-
-Things Structable doesn't do (by design)
-
-	- Guess table or column names. You must specify these.
-	- Handle relations between tables.
-	- Manage the schema.
-	- Transform complex struct fields into simple ones (that is, serialize fields).
-
-However, Squirrel can ease many of these tasks.
-
-*/
+// Package structable /* Structable is a struct-to-table mapper for databases.
 package structable
 
 import (
@@ -150,26 +9,10 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
-// 'stbl' is the main tag used for annotating Structable Records.
+// StructableTag 'stbl' is the main tag used for annotating Structable Records.
 const StructableTag = "stbl"
 
-/* Record describes a struct that can be stored.
-
-Example:
-
-	type Stool struct {
-		Id 		 int 	`stbl:"id PRIMARY_KEY AUTO_INCREMENT"`
-		Legs 	 int    `stbl:"number_of_legs"`
-		Material string `stbl:"material"`
-		Ignored  string // will not be stored.
-	}
-
-The above links the Stool record to a database table that has a primary
-key (with auto-incrementing values) called 'id', an int field named
-'number_of_legs', and a 'material' field that is a VARCHAR or TEXT (depending
-on the database implementation).
-
-*/
+// Record describes a struct that can be stored.
 type Record interface{}
 
 // Internal representation of a field on a database table, and its
@@ -215,7 +58,7 @@ type Recorder interface {
 }
 
 type Loader interface {
-	// Loads the entire Record using the value of the PRIMARY_KEY(s)
+	// Load loads the entire Record using the value of the PRIMARY_KEY(s)
 	// This will only fetch columns that are mapped on the bound Record. But you can think of it
 	// as doing something like this:
 	//
@@ -223,7 +66,7 @@ type Loader interface {
 	//
 	// And then mapping the result to the currently bound Record.
 	Load() error
-	// Load by a WHERE-like clause. See Squirrel's Where(pred, args)
+	// LoadWhere Load by a WHERE-like clause. See Squirrel's Where(pred, args)
 	LoadWhere(interface{}, ...interface{}) error
 }
 
@@ -231,13 +74,13 @@ type Saver interface {
 	// Insert inserts the bound Record into the bound table.
 	Insert() error
 
-	// Update updates all of the fields on the bound Record based on the PRIMARY_KEY fields.
+	// Update updates all the fields on the bound Record based on the PRIMARY_KEY fields.
 	//
 	// Essentially, it does something like this:
 	// 	UPDATE bound_table SET every=?, field=?, but=?, keys=? WHERE primary_key=?
 	Update() error
 
-	// Deletes a Record based on its PRIMARY_KEY(s).
+	// Delete a Record based on its PRIMARY_KEY(s).
 	Delete() error
 }
 
@@ -345,7 +188,7 @@ func ListWhere(d Recorder, fn WhereFunc) ([]Recorder, error) {
 	return buf, rows.Err()
 }
 
-// Implements the Recorder interface, and stores data in a DB.
+// DbRecorder Implements the Recorder interface, and stores data in a DB.
 type DbRecorder struct {
 	builder *squirrel.StatementBuilderType
 	db      squirrel.DBProxyBeginner
@@ -356,8 +199,8 @@ type DbRecorder struct {
 	flavor  string
 }
 
-func (d *DbRecorder) Interface() interface{} {
-	return d.record
+func (s *DbRecorder) Interface() interface{} {
+	return s.record
 }
 
 // New creates a new DbRecorder.
@@ -371,15 +214,15 @@ func New(db squirrel.DBProxyBeginner, flavor string) *DbRecorder {
 }
 
 // Init initializes a DbRecorder
-func (d *DbRecorder) Init(db squirrel.DBProxyBeginner, flavor string) {
+func (s *DbRecorder) Init(db squirrel.DBProxyBeginner, flavor string) {
 	b := squirrel.StatementBuilder.RunWith(db)
 	if flavor == "postgres" {
 		b = b.PlaceholderFormat(squirrel.Dollar)
 	}
 
-	d.builder = &b
-	d.db = db
-	d.flavor = flavor
+	s.builder = &b
+	s.db = db
+	s.flavor = flavor
 }
 
 // TableName returns the table name of this recorder.
@@ -734,7 +577,7 @@ func (s *DbRecorder) scanFields(ar Record) {
 		if len(f.Tag) == 0 {
 			continue
 		}
-		sqtag := f.Tag.Get("stbl")
+		sqtag := f.Tag.Get(StructableTag)
 		if len(sqtag) == 0 {
 			continue
 		}

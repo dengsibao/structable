@@ -3,7 +3,6 @@ package structable
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -86,7 +85,6 @@ func TestBind(t *testing.T) {
 func TestLoad(t *testing.T) {
 	stool := newStool()
 	db := &DBStub{}
-	//db, builder := squirrelFixture()
 
 	r := New(db, "mysql").Bind("test_table", stool)
 
@@ -298,14 +296,6 @@ func TestActiveRecord(t *testing.T) {
 	}
 }
 
-func squirrelFixture() (*DBStub, squirrel.StatementBuilderType) {
-
-	db := &DBStub{}
-	//cache := squirrel.NewStmtCacher(db)
-	return db, squirrel.StatementBuilder.RunWith(db)
-
-}
-
 // FIXTURES
 type DBStub struct {
 	err error
@@ -322,8 +312,6 @@ type DBStub struct {
 	LastQueryRowSql  string
 	LastQueryRowArgs []interface{}
 }
-
-var StubError = fmt.Errorf("this is a stub; this is only a stub")
 
 func (s *DBStub) Prepare(query string) (*sql.Stmt, error) {
 	s.LastPrepareSql = query
