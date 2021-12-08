@@ -609,3 +609,18 @@ func (s *DbRecorder) parseTag(fieldName, tag string) []string {
 	}
 	return parts
 }
+
+func (s *DbRecorder) Transaction(f func() error) error {
+	var err error
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = f()
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
