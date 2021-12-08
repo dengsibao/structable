@@ -1,4 +1,4 @@
-module github.com/dengsibao/squirrel
+module github.com/dengsibao/structable
 
 go 1.16
 
