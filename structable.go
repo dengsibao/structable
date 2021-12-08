@@ -121,6 +121,8 @@ type Describer interface {
 	Driver() string
 
 	Init(d squirrel.DBProxyBeginner, flavor string)
+
+	Transaction(func() error) error
 }
 
 // List returns a list of objects of the given kind.
