@@ -23,11 +23,11 @@ filling the following contract:
     Bind(string, Record) Recorder // link struct to table
     Interface() interface{}  // Get the struct that has been linked
     Insert() error // INSERT just one record
-    Update() error // UPDATE just one record
-    Delete() error // DELETE just one record
-    Exists() (bool, error) // Check for just one record
+    Update() error // UPDATE just one record by primary key
+    Delete() error // DELETE just one record by primary key
+    Exists() (bool, error) // Check for just one record by primary key (default id)
     ExistsWhere(cond interface{}, args ...interface{}) (bool, error)
-    Load() error  // SELECT just one record
+    Load() error  // SELECT just one record by primary key (default id)
     LoadWhere(cond interface{}, args ...interface{}) error // Alternate Load()
   }
 ```
@@ -40,20 +40,20 @@ operations.
 The usual way...
 
 ```
-$ glide get github.com/Masterminds/structable
+$ glide get github.com/dengsibao/structable
 $ # or...
-$ go get github.com/Masterminds/structable
+$ go get github.com/dengsibao/structable
 ```
 
 And import it via:
 
 ```
-import "github.com/Masterminds/structable"
+import "github.com/dengsibao/structable"
 ```
 
 ## How To Use It
 
-[![GoDoc](https://godoc.org/github.com/Masterminds/structable?status.png)](https://godoc.org/github.com/Masterminds/structable)
+[![GoDoc](https://godoc.org/github.com/dengsibao/structable?status.png)](https://godoc.org/github.com/dengsibao/structable)
 
 Structable works by mapping a struct to columns in a database.
 
@@ -61,8 +61,8 @@ To annotate a struct, you do something like this:
 
 ```go
   type Stool struct {
-    Id		 int	`stbl:"id, PRIMARY_KEY, AUTO_INCREMENT"`
-    Legs	 int    `stbl:"number_of_legs"`
+    Id       int    `stbl:"id, PRIMARY_KEY, AUTO_INCREMENT"`
+    Legs     int    `stbl:"number_of_legs"`
     Material string `stbl:"material"`
     Ignored  string // will not be stored. No tag.
   }
@@ -138,7 +138,7 @@ func (s *SchemaInfo) Tables() ([]*Table, error) {
 
 ### Tested On
 
-- MySQL (5.5)
+- MySQL (8.0)
 - PostgreSQL (9.3, 9.4, 9.6)
 - SQLite 3
 
