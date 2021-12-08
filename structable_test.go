@@ -12,7 +12,7 @@ import (
 
 type Stool struct {
 	Id       int     `stbl:"id,PRIMARY_KEY,AUTO_INCREMENT"`
-	Id2      int     `stbl:"id_two,    PRIMARY_KEY      "`
+	Id2      int     `stbl:"id_two,PRIMARY_KEY"`
 	Legs     int     `stbl:"number_of_legs"`
 	Material string  `stbl:"material"`
 	Color    *string `stbl:"color"`
