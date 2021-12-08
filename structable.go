@@ -2,9 +2,11 @@
 package structable
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -623,4 +625,11 @@ func (s *DbRecorder) Transaction(f func() error) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+type Model struct {
+	ID        uint         `stbl:"id,PRIMARY_KEY,AUTO_INCREMENT"`
+	CreatedAt time.Time    `stbl:"created_at"`
+	UpdatedAt time.Time    `stbl:"updated_at"`
+	DeletedAt sql.NullTime `stbl:"deleted_at"`
 }
